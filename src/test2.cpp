@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -9,16 +8,22 @@
 #include <iostream>
 #include <fstream>
 #include <ctime>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <signal.h>
 
 #define PORT 8878
 
 using namespace std;
 
 string task2_cases[] {"b", "k", "m", "g"};
+int log_fd;
 
 
-void log_send(int fd, string msg) {
-    time_t cur = time(NULL);
+void log_send(string msg) {
+    log_fd = open("log_2", O_WRONLY);
+    write(log_fd, msg.c_str(), strlen(msg.c_str()));
+    close(log_fd);
 }
 
 void command_1(int fd) {
@@ -33,7 +38,9 @@ void command_1(int fd) {
     }
     pclose(f);
     send(fd, msg.c_str(), strlen(msg.c_str()), 0);
-    cout << "sent msg to client:\n" << msg << endl;
+    msg = "sent msg to client\n" + msg;
+    cout << msg << endl;
+    log_send(msg);
 }
 
 
@@ -87,7 +94,9 @@ int command_2(int fd) {
     system("rm ../bin/free");
     // sending ans to client
     send(fd, msg.c_str(), strlen(msg.c_str()), 0);
-    cout << "sent msg to client:\n" << msg << endl;
+    msg = "sent msg to client\n" + msg;
+    cout << msg << endl;
+    log_send(msg);
     return 0;
 }
 
@@ -123,9 +132,21 @@ int main() {
         exit(-4);
     }
 
+    // creating fifo for log server (additional task)
+    if(mkfifo("log_2", 777) == -1) {
+        perror("FIFO failure");
+        exit(-5);
+    }
+    // creating child process for log server
+    pid_t log_pid = fork();
+    if(log_pid == 0) {
+        cout << "Log server started working..." << endl;
+        execl("../bin/log_server_2", NULL);
+    }
+
     char buff[256];
     // cycle for server work
-    string command, msg;
+    string command, msg, log_msg;
     while(1) {
         // recieving command from client
         memset(buff, 0, 256);
@@ -142,22 +163,33 @@ int main() {
             "\tfreemem - recieve amount of free physical memory (using requested units)";
             send(fd, msg.c_str(), strlen(msg.c_str()), 0);
             cout << "sent msg to client:\n" << msg << endl;
+            log_msg = "Got command:" + command + "\tsent shelp to client";
+            log_send(log_msg);
             continue;
         } else if(command == "osver") {
+            log_msg = "Got command:" + command;
+            log_send(log_msg);
             command_1(fd);
             continue;
         } else if(command == "freemem") {
+            log_msg = "Got command:" + command;
+            log_send(log_msg);
             command_2(fd);
             sleep(1);
             continue;
+        } else if(command == "off") {
+            kill(log_pid, SIGQUIT);
+            sleep(1);
+            break;
         } else {
             msg = "Invalid command, try shelp";
             send(fd, msg.c_str(), strlen(msg.c_str()), 0);
             cout << "sent msg to client:\n" << msg << endl;
+            log_msg = "Got command:" + command + "\nsent msg to client:\n" + msg;
+            log_send(log_msg);
             continue;
         }
     }
-
     close(serv_sock);
     return 0;
 }

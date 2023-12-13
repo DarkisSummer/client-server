@@ -17,8 +17,8 @@ using namespace std;
 void command_1(int fd) { // fucntion that send num of monitors to client
     string msg {"Number of screens: "};
     // getting info about screens
-    system("xdpyinfo > bin/xdpyinfo");
-    ifstream ffile ("bin/xdpyinfo");
+    system("xdpyinfo > ../bin/xdpyinfo");
+    ifstream ffile ("../bin/xdpyinfo");
     
     // parsing file until we find needed line
     string line;
@@ -31,7 +31,7 @@ void command_1(int fd) { // fucntion that send num of monitors to client
         }
     }
     ffile.close();
-    system("rm bin/xdpyinfo");
+    system("rm ../bin/xdpyinfo");
     // sending ans to client
     send(fd, msg.c_str(), strlen(msg.c_str()), 0);
     cout << "sent msg to client:\n" << msg << endl;
@@ -40,8 +40,8 @@ void command_1(int fd) { // fucntion that send num of monitors to client
 void command_2(int fd) {
     string msg {"Default screen: "};
     // getting info about screens
-    system("xdpyinfo > bin/xdpyinfo");
-    ifstream ffile ("bin/xdpyinfo");
+    system("xdpyinfo > ../bin/xdpyinfo");
+    ifstream ffile ("../bin/xdpyinfo");
     
     // parsing file until we find needed line
     string line;
@@ -57,7 +57,7 @@ void command_2(int fd) {
         }
     }
     ffile.close();
-    system("rm bin/xdpyinfo");
+    system("rm ../bin/xdpyinfo");
     // sending ans to client
     send(fd, msg.c_str(), strlen(msg.c_str()), 0);
     cout << "sent msg to client:\n" << msg << endl;

@@ -21,7 +21,9 @@ int log_fd;
 
 
 void log_send(string msg) {
-    log_fd = open("log_2", O_WRONLY);
+    cout << "111" << endl;
+    log_fd = open("./log_2", O_WRONLY);
+    cout << "222" << endl;
     write(log_fd, msg.c_str(), strlen(msg.c_str()));
     close(log_fd);
 }
@@ -112,18 +114,21 @@ int main() {
     addr.sin_family = AF_INET;
     addr.sin_port = htons(PORT);
     addr.sin_addr.s_addr = INADDR_ANY;
+    
 
     // binding socket to addr
     if((bind(serv_sock, (struct sockaddr*)&addr, sizeof(addr))) < 0) {
         perror("Binding failure");
         exit(-2);
     }
+    cout << "Binding success" << endl;
 
     // defining num of listeners
     if((listen(serv_sock, 1)) < 0) {
         perror("Listen failure");
         exit(-3);
     }
+    cout << "Listening success" << endl;
 
     // Accepting client
     int fd;
@@ -131,17 +136,19 @@ int main() {
         perror("Accept failure");
         exit(-4);
     }
+    cout << "Accepting success" << endl;
 
     // creating fifo for log server (additional task)
-    if(mkfifo("log_2", 777) == -1) {
+    if(mkfifo("log_2", 0777) == -1) {
         perror("FIFO failure");
         exit(-5);
     }
+    cout << "Creating FIFO success" << endl;
     // creating child process for log server
     pid_t log_pid = fork();
     if(log_pid == 0) {
-        cout << "Log server started working..." << endl;
-        execl("../bin/log_server_2", NULL);
+        cout << "Child started working..." << endl;
+        execl("log_server_2", NULL);
     }
 
     char buff[256];
@@ -160,7 +167,8 @@ int main() {
             msg = "Server 2 commands: \n"
             "\tshelp - get server commands (you're here)\n"
             "\tosver - recieve current version of OS\n"
-            "\tfreemem - recieve amount of free physical memory (using requested units)";
+            "\tfreemem - recieve amount of free physical memory (using requested units)\n"
+            "\toff - turn off the server";
             send(fd, msg.c_str(), strlen(msg.c_str()), 0);
             cout << "sent msg to client:\n" << msg << endl;
             log_msg = "Got command:" + command + "\tsent shelp to client";
@@ -180,6 +188,7 @@ int main() {
         } else if(command == "off") {
             kill(log_pid, SIGQUIT);
             sleep(1);
+            close(log_fd);
             break;
         } else {
             msg = "Invalid command, try shelp";

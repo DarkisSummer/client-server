@@ -9,10 +9,21 @@
 #include <iostream>
 #include <fstream>
 #include <regex>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <signal.h>
 
 #define PORT 8877
 
 using namespace std;
+
+int log_fd;
+
+void log_send(string msg) {
+    log_fd = open("./log_1", O_WRONLY);
+    write(log_fd, msg.c_str(), strlen(msg.c_str()));
+    close(log_fd);
+}
 
 void command_1(int fd) { // fucntion that send num of monitors to client
     string msg {"Number of screens: "};
@@ -34,7 +45,9 @@ void command_1(int fd) { // fucntion that send num of monitors to client
     system("rm ../bin/xdpyinfo");
     // sending ans to client
     send(fd, msg.c_str(), strlen(msg.c_str()), 0);
-    cout << "sent msg to client:\n" << msg << endl;
+    msg = "\nsent msg to client:\n" + msg;
+    cout << msg << endl;
+    log_send(msg);
 }
 
 void command_2(int fd) {
@@ -60,7 +73,9 @@ void command_2(int fd) {
     system("rm ../bin/xdpyinfo");
     // sending ans to client
     send(fd, msg.c_str(), strlen(msg.c_str()), 0);
-    cout << "sent msg to client:\n" << msg << endl;
+    msg = "\nsent msg to client:\n" + msg;
+    cout << msg << endl;
+    log_send(msg);
 }
 
 int main() {
@@ -80,12 +95,14 @@ int main() {
         perror("Binding failure");
         exit(-2);
     }
+    cout << "Binding success..." << endl;
 
     // defining num of listeners
     if((listen(serv_sock, 1)) < 0) {
         perror("Listen failure");
         exit(-3);
     }
+    cout << "Listening success..." << endl;
 
     // Accepting client
     int fd;
@@ -93,10 +110,26 @@ int main() {
         perror("Accept failure");
         exit(-4);
     }
+    cout << "Accepting success..." << endl;
+
+    system("rm log_1");
+    // creating fifo for log server (additional task)
+    if(mkfifo("log_1", 0777) == -1) {
+        perror("FIFO failure");
+        exit(-5);
+    }
+    cout << "Creating FIFO success" << endl;
+    // creating child process for log server
+    pid_t log_pid = fork();
+    if(log_pid == 0) {
+        cout << "Child started working..." << endl;
+        execl("log_server_1", NULL);
+    }
 
     char buff[256];
     // cycle for server work
-    string command, msg;
+    string command, msg, log_msg;
+    cout << "Server started working..." << endl;
     while(1) {
         // recieving command from client
         memset(buff, 0, 256);
@@ -110,19 +143,34 @@ int main() {
             msg = "Server 1 commands: \n"
             "\tshelp - get server commands (you're here)\n"
             "\tmonnum - recieve number of screens\n"
-            "\tmonsize - recieve width x height of main screen";
+            "\tmonsize - recieve width x height of main screen\n"
+            "\toff - turn off the server";
             send(fd, msg.c_str(), strlen(msg.c_str()), 0);
             cout << "sent msg to client:\n" << msg << endl;   
         } else if(command == "monnum") {
+            log_msg = "Got command:" + command;
+            log_send(log_msg);
             command_1(fd);
             continue;
         } else if(command == "monsize") {
+            log_msg = "Got command:" + command;
+            log_send(log_msg);
             command_2(fd);
             continue;
-        } else {
+        } else if(command == "off") {
+            kill(log_pid, SIGQUIT);
+            sleep(1);
+            close(log_fd);
+            system("rm log_1");
+            break;
+        } 
+        else {
             msg = "Invalid command, try shelp";
             send(fd, msg.c_str(), strlen(msg.c_str()), 0);
-            cout << "sent msg to client:\n" << msg << endl;   
+            cout << "sent msg to client:\n" << msg << endl;
+            log_msg = "Got command:" + command + "\nsent msg to client:\n" + msg;
+            log_send(log_msg);
+            continue;
         }
     }
 

@@ -36,7 +36,6 @@ void connect(int* out_socket, int port) {
 int main() {
     // creating arrs for sockets, ports
     int sockets[2];
-    int ports[2] = {PORT_1, PORT_2};
     int server_num = -1;
 
     connect(&sockets[0], PORT_1);
@@ -51,7 +50,7 @@ int main() {
     while(1) {
         if(server_num == -1) {
             // choosing server
-            if(command != "0" & command != "1") {
+            if(command != "0" && command != "1") {
                 if(flag) {
                     cout << "Choose the server (0 | 1)" << endl;
                     cin >> command;

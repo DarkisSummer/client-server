@@ -13,13 +13,22 @@ using namespace std;
 ofstream ff;
 
 void _handler(int n) {
-    cout << "Closing" << endl;
+    cout << "Log server closing..." << endl;
     time_t cur = time(NULL);
     string msg = ctime(&cur);
     string msg_log = msg + "off";
     ff << msg_log;
     ff.close();
     exit(0);
+}
+
+void helper(string buf_msg) {
+    time_t cur;
+    string msg;
+    cur = time(NULL);
+    msg = ctime(&cur);
+    msg += buf_msg + "\n";
+    ff << msg;
 }
 
 int main() {
@@ -32,21 +41,17 @@ int main() {
         exit(-1);
     }
     ff.open("../bin/logs/server_2_logs.txt");
+    helper("Log server started working...");
     char buf[1024];
-    string msg, buf_msg;
-    time_t cur;
+    string buf_msg;
     while(1) {
         memset(buf, 0, 1024);
         sleep(1);
         read(log_fd, buf, sizeof(buf));
         if(buf[0] != 0) {
             cout << "Get log msg" << endl;
-            cur = time(NULL);
-            msg = ctime(&cur);
             buf_msg = buf;
-            msg += buf_msg + "\n";
-            cout << msg;
-            ff << msg;
+            helper(buf_msg);
         }
         signal(SIGQUIT, _handler);
     }

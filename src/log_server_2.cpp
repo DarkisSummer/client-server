@@ -34,13 +34,13 @@ void helper(string buf_msg) {
 int main() {
     sleep(1);
     cout << "Log server started..." << endl;
-    int log_fd = open("./log_2", O_RDONLY);
+    int log_fd = open("bin/log_2", O_RDONLY);
     cout << "???" << endl;
     if(log_fd == -1) {
         perror("Can't open FIFO");
         exit(-1);
     }
-    ff.open("../bin/logs/server_2_logs.txt");
+    ff.open("bin/logs/server_2_logs.txt");
     helper("Log server started working...");
     char buf[1024];
     string buf_msg;

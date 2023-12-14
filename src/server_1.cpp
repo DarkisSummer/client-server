@@ -20,7 +20,7 @@ using namespace std;
 int log_fd;
 
 void log_send(string msg) {
-    log_fd = open("./log_1", O_WRONLY);
+    log_fd = open("bin/log_1", O_WRONLY);
     write(log_fd, msg.c_str(), strlen(msg.c_str()));
     close(log_fd);
 }
@@ -28,8 +28,8 @@ void log_send(string msg) {
 void command_1(int fd) { // fucntion that send num of monitors to client
     string msg {"Number of screens: "};
     // getting info about screens
-    system("xdpyinfo > ../bin/xdpyinfo");
-    ifstream ffile ("../bin/xdpyinfo");
+    system("xdpyinfo > bin/xdpyinfo");
+    ifstream ffile ("bin/xdpyinfo");
     
     // parsing file until we find needed line
     string line;
@@ -42,7 +42,7 @@ void command_1(int fd) { // fucntion that send num of monitors to client
         }
     }
     ffile.close();
-    system("rm ../bin/xdpyinfo");
+    system("rm bin/xdpyinfo");
     // sending ans to client
     send(fd, msg.c_str(), strlen(msg.c_str()), 0);
     msg = "\nsent msg to client:\n" + msg;
@@ -53,8 +53,8 @@ void command_1(int fd) { // fucntion that send num of monitors to client
 void command_2(int fd) {
     string msg {"Default screen: "};
     // getting info about screens
-    system("xdpyinfo > ../bin/xdpyinfo");
-    ifstream ffile ("../bin/xdpyinfo");
+    system("xdpyinfo > bin/xdpyinfo");
+    ifstream ffile ("bin/xdpyinfo");
     
     // parsing file until we find needed line
     string line;
@@ -70,7 +70,7 @@ void command_2(int fd) {
         }
     }
     ffile.close();
-    system("rm ../bin/xdpyinfo");
+    system("rm bin/xdpyinfo");
     // sending ans to client
     send(fd, msg.c_str(), strlen(msg.c_str()), 0);
     msg = "\nsent msg to client:\n" + msg;
@@ -112,9 +112,9 @@ int main() {
     }
     cout << "Accepting success..." << endl;
 
-    system("rm log_1");
+    system("rm bin/log_1");
     // creating fifo for log server (additional task)
-    if(mkfifo("log_1", 0777) == -1) {
+    if(mkfifo("bin/log_1", 0777) == -1) {
         perror("FIFO failure");
         exit(-5);
     }
@@ -123,7 +123,7 @@ int main() {
     pid_t log_pid = fork();
     if(log_pid == 0) {
         cout << "Child started working..." << endl;
-        execl("log_server_1", NULL);
+        execl("bin/log_server_1", NULL);
     }
 
     char buff[256];
@@ -161,7 +161,7 @@ int main() {
             kill(log_pid, SIGQUIT);
             sleep(1);
             close(log_fd);
-            system("rm log_1");
+            system("rm bin/log_1");
             break;
         } 
         else {

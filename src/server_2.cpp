@@ -21,7 +21,7 @@ int log_fd;
 
 
 void log_send(string msg) {
-    log_fd = open("./log_2", O_WRONLY);
+    log_fd = open("bin/log_2", O_WRONLY);
     write(log_fd, msg.c_str(), strlen(msg.c_str()));
     close(log_fd);
 }
@@ -53,9 +53,9 @@ int command_2(int fd) {
     bool f = false;
     for(auto s: task2_cases) if (s == buff) {f = true; break;}
     if(!f) {send(fd, "Invalid units\n", sizeof("Invalid units\n"), 0); return 1;}
-    string cmd = "free -" + buff + " > ../bin/free";
+    string cmd = "free -" + buff + " > bin/free";
     system(cmd.c_str());
-    ifstream ffile ("../bin/free");
+    ifstream ffile ("bin/free");
     string msg {"Free phys memory: "};
     int count {0};
     string line;
@@ -91,7 +91,7 @@ int command_2(int fd) {
     }
     */
     ffile.close();
-    system("rm ../bin/free");
+    system("rm bin/free");
     // sending ans to client
     send(fd, msg.c_str(), strlen(msg.c_str()), 0);
     msg = "\nsent msg to client\n" + msg;
@@ -136,9 +136,9 @@ int main() {
     }
     cout << "Accepting success..." << endl;
 
-    system("rm log_2");
+    system("rm bin/log_2");
     // creating fifo for log server (additional task)
-    if(mkfifo("log_2", 0777) == -1) {
+    if(mkfifo("bin/log_2", 0777) == -1) {
         perror("FIFO failure");
         exit(-5);
     }
@@ -147,7 +147,7 @@ int main() {
     pid_t log_pid = fork();
     if(log_pid == 0) {
         cout << "Child started working..." << endl;
-        execl("log_server_2", NULL);
+        execl("bin/log_server_2", NULL);
     }
 
     char buff[256];
@@ -188,7 +188,7 @@ int main() {
             kill(log_pid, SIGQUIT);
             sleep(1);
             close(log_fd);
-            system("rm log_2");
+            system("rm bin/log_2");
             break;
         } else {
             msg = "Invalid command, try shelp";

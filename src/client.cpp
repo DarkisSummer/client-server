@@ -69,7 +69,6 @@ int main() {
         } else {
             cout << "\nEnter a command (help):" << endl;
             cin >> command;
-
             if(command == "switch") {
                 server_num = -1;
                 flag = true;

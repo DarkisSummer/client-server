@@ -35,7 +35,6 @@ int main() {
     sleep(1);
     cout << "Log server started..." << endl;
     int log_fd = open("bin/log_2", O_RDONLY);
-    cout << "???" << endl;
     if(log_fd == -1) {
         perror("Can't open FIFO");
         exit(-1);

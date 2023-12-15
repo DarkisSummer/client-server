@@ -13,11 +13,13 @@
 #include <signal.h>
 
 #define PORT 8878
+#define NUM_CLIENTS 3
 
 using namespace std;
 
 string task2_cases[] {"b", "k", "m", "g"};
-int log_fd;
+int log_fd, serv_sock;
+pid_t log_pid;
 
 
 void log_send(string msg) {
@@ -100,10 +102,57 @@ int command_2(int fd) {
     return 0;
 }
 
+void server_func(int fd) {
+    char buff[256];
+    // cycle for server work
+    string command, msg, log_msg;
+
+    cout << "Server started working..." << endl;
+    while(1) {
+        // recieving command from client
+        memset(buff, 0, 256);
+        recv(fd, buff, sizeof(buff), 0);
+        command = buff;
+
+        // command cases
+        if(command == "shelp") {
+            msg = "Server 1 commands: \n"
+            "\tshelp - get server commands (you're here)\n"
+            "\tmonnum - recieve number of screens\n"
+            "\tmonsize - recieve width x height of main screen\n"
+            "\toff - turn off the server";
+            send(fd, msg.c_str(), strlen(msg.c_str()), 0);
+        } else if(command == "monnum") {
+            log_msg = "Got command:" + command;
+            log_send(log_msg);
+            command_1(fd);
+            continue;
+        } else if(command == "monsize") {
+            log_msg = "Got command:" + command;
+            log_send(log_msg);
+            command_2(fd);
+            continue;
+        } else if(command == "off") {
+            kill(log_pid, SIGQUIT);
+            sleep(1);
+            close(log_fd);
+            system("rm bin/log_1");
+            close(serv_sock);
+            break;
+        } 
+        else {
+            msg = "Invalid command, try shelp";
+            send(fd, msg.c_str(), strlen(msg.c_str()), 0);
+            log_msg = "Got command:" + command + "\nsent msg to client:\n" + msg;
+            log_send(log_msg);
+            continue;
+        }
+    }
+}
+
 
 int main() {
     // define server socket, address
-    int serv_sock;
     if((serv_sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("Socket failure");
         exit(-1);
@@ -122,19 +171,11 @@ int main() {
     cout << "Binding success..." << endl;
 
     // defining num of listeners
-    if((listen(serv_sock, 1)) < 0) {
+    if((listen(serv_sock, NUM_CLIENTS)) < 0) {
         perror("Listen failure");
         exit(-3);
     }
     cout << "Listening success..." << endl;
-
-    // Accepting client
-    int fd;
-    if(((fd = accept(serv_sock, NULL, NULL))) < 0) {
-        perror("Accept failure");
-        exit(-4);
-    }
-    cout << "Accepting success..." << endl;
 
     system("rm bin/log_2");
     // creating fifo for log server (additional task)
@@ -144,62 +185,29 @@ int main() {
     }
     cout << "Creating FIFO success" << endl;
     // creating child process for log server
-    pid_t log_pid = fork();
+    log_pid = fork();
     if(log_pid == 0) {
         cout << "Child started working..." << endl;
         execl("bin/log_server_2", NULL);
     }
 
-    char buff[256];
-    // cycle for server work
-    string command, msg, log_msg;
-    cout << "Server started working..." << endl;
+    // Accepting clients
+    int fd;
+    pid_t pid;
     while(1) {
-        // recieving command from client
-        memset(buff, 0, 256);
-        recv(fd, buff, sizeof(buff), 0);
-        command = buff;
-
-        cout << "\nGot command: " << command << endl;
-
-        // command cases
-        if(command == "shelp") {
-            msg = "Server 2 commands: \n"
-            "\tshelp - get server commands (you're here)\n"
-            "\tosver - recieve current version of OS\n"
-            "\tfreemem - recieve amount of free physical memory (using requested units)\n"
-            "\toff - turn off the server";
-            send(fd, msg.c_str(), strlen(msg.c_str()), 0);
-            cout << "sent msg to client:\n" << msg << endl;
-            log_msg = "Got command:" + command + "\tsent shelp to client";
-            log_send(log_msg);
-            continue;
-        } else if(command == "osver") {
-            log_msg = "Got command:" + command;
-            log_send(log_msg);
-            command_1(fd);
-            continue;
-        } else if(command == "freemem") {
-            log_msg = "Got command:" + command;
-            log_send(log_msg);
-            command_2(fd);
-            continue;
-        } else if(command == "off") {
-            kill(log_pid, SIGQUIT);
-            sleep(1);
-            close(log_fd);
-            system("rm bin/log_2");
-            break;
+        if((fd = accept(serv_sock, NULL, NULL)) < 0) {
+            perror("Accept failure");
+            exit(-4);
         } else {
-            msg = "Invalid command, try shelp";
-            send(fd, msg.c_str(), strlen(msg.c_str()), 0);
-            cout << "sent msg to client:\n" << msg << endl;
-            log_msg = "Got command:" + command + "\nsent msg to client:\n" + msg;
-            log_send(log_msg);
-            continue;
+            cout << "Accepting success..." << endl;
+            pid = fork();
+            if(pid == 0) {
+                server_func(fd);
+            } else {
+                close(fd);
+            }
         }
     }
-
-    close(serv_sock);
+    
     return 0;
 }

@@ -111,7 +111,9 @@ void server_func(int fd) {
             log_send(log_msg);
             command_2(fd);
             continue;
-        } else if(command == "off") {
+        } 
+        /*
+        else if(command == "off") {
             kill(log_pid, SIGQUIT);
             sleep(1);
             close(log_fd);
@@ -119,6 +121,7 @@ void server_func(int fd) {
             close(serv_sock);
             break;
         } 
+        */
         else {
             msg = "Invalid command, try shelp";
             send(fd, msg.c_str(), strlen(msg.c_str()), 0);

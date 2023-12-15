@@ -10,15 +10,14 @@
 
 using namespace std;
 
-ofstream ff;
-
 void _handler(int n) {
     cout << "Log server closing..." << endl;
     time_t cur = time(NULL);
     string msg = ctime(&cur);
     string msg_log = msg + "off";
-    ff << msg_log;
-    ff.close();
+    FILE *f = fopen("bin/logs/server_1_logs.txt", "a");
+    fprintf(f, msg_log.c_str());
+    fclose(f);
     exit(0);
 }
 
@@ -28,7 +27,9 @@ void helper(string buf_msg) {
     cur = time(NULL);
     msg = ctime(&cur);
     msg += buf_msg + "\n";
-    ff << msg;
+    FILE *f = fopen("bin/logs/server_1_logs.txt", "a");
+    fprintf(f, msg.c_str());
+    fclose(f);
 }
 
 int main() {
@@ -40,7 +41,6 @@ int main() {
         perror("Can't open FIFO");
         exit(-1);
     }
-    ff.open("bin/logs/server_1_logs.txt");
     helper("Log server started working...");
     char buf[1024];
     string buf_msg;

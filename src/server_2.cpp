@@ -116,23 +116,23 @@ void server_func(int fd) {
 
         // command cases
         if(command == "shelp") {
-            msg = "Server 1 commands: \n"
+            msg = "Server 2 commands: \n"
             "\tshelp - get server commands (you're here)\n"
-            "\tmonnum - recieve number of screens\n"
-            "\tmonsize - recieve width x height of main screen\n"
-            "\toff - turn off the server";
+            "\tosver - recieve current version of OS\n"
+            "\tfreemem - recieve amount of free physical memory (using requested units)";
             send(fd, msg.c_str(), strlen(msg.c_str()), 0);
-        } else if(command == "monnum") {
-            log_msg = "Got command:" + command;
-            log_send(log_msg);
+            cout << "sent msg to client:\n" << msg << endl;
+            continue;
+        } else if(command == "osver") {
             command_1(fd);
             continue;
-        } else if(command == "monsize") {
-            log_msg = "Got command:" + command;
-            log_send(log_msg);
+        } else if(command == "freemem") {
             command_2(fd);
+            sleep(1);
             continue;
-        } else if(command == "off") {
+        } 
+        /*
+        else if(command == "off") {
             kill(log_pid, SIGQUIT);
             sleep(1);
             close(log_fd);
@@ -140,6 +140,7 @@ void server_func(int fd) {
             close(serv_sock);
             break;
         } 
+        */
         else {
             msg = "Invalid command, try shelp";
             send(fd, msg.c_str(), strlen(msg.c_str()), 0);
